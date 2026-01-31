@@ -7,18 +7,18 @@
 
 ![Demo](docs/demo.gif)
 
-## ✨ Features
+## Features
 
-- **📄 Multi-Format Support**: Process PowerPoint (.pptx) and PDF lecture slides
-- **🧠 AI-Powered Analysis**: Uses Claude or GPT to understand and synthesize content
-- **📝 Study Guide Generation**: Creates organized summaries with key concepts
-- **❓ Practice Questions**: Generates multiple choice, short answer, true/false, fill-in-blank, and essay questions
-- **🗂️ Flashcard Export**: Creates Anki-compatible flashcard decks for spaced repetition
-- **🗺️ Concept Maps**: Visualizes relationships between topics (Mermaid diagrams)
-- **📊 Content Analysis**: Identifies high-density areas that need extra review
-- **📤 Multiple Export Formats**: Markdown, JSON, Anki TXT/CSV
+- **Multi-Format Support**: Process PowerPoint (.pptx) and PDF lecture slides
+- **AI-Powered Analysis**: Uses Claude or GPT to understand and synthesize content
+- **Study Guide Generation**: Creates organized summaries with key concepts
+- **Practice Questions**: Generates multiple choice, short answer, true/false, fill-in-blank, and essay questions
+- **Flashcard Export**: Creates Anki-compatible flashcard decks for spaced repetition
+- **Concept Maps**: Visualizes relationships between topics (Mermaid diagrams)
+- **Content Analysis**: Identifies high-density areas that need extra review
+- **Multiple Export Formats**: Markdown, JSON, Anki TXT/CSV
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -129,7 +129,7 @@ graph TD
     c1 -->|includes| c3["Classification"]
 ```
 
-## 🛠️ Configuration
+## Configuration
 
 ### Command Line Options
 
@@ -152,7 +152,7 @@ graph TD
 - `fill_in_blank` - Complete the sentence
 - `essay` - Extended response questions
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 lecture-study-guide-generator/
@@ -184,7 +184,7 @@ lecture-study-guide-generator/
 └── README.md
 ```
 
-## 🔧 Development
+## Development
 
 ### Setup Development Environment
 
@@ -227,7 +227,7 @@ ruff check lecture_study_guide/
 mypy lecture_study_guide/
 ```
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -241,15 +241,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Anthropic Claude](https://www.anthropic.com/) for AI capabilities
 - [python-pptx](https://python-pptx.readthedocs.io/) for PowerPoint parsing
 - [pdfplumber](https://github.com/jsvine/pdfplumber) for PDF extraction
 - [Anki](https://apps.ankiweb.net/) for spaced repetition
 
-## 📬 Contact
+## Contact
 
-Your Name - [@yourusername](https://twitter.com/yourusername)
+Saurish Uddaraju - [@suddaraju2](svu7@scarletmail.rutgers.edu)
 
 Project Link: [https://github.com/yourusername/lecture-study-guide-generator](https://github.com/yourusername/lecture-study-guide-generator)
