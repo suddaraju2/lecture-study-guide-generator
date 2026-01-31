@@ -251,5 +251,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 Saurish Uddaraju - [@suddaraju2](svu7@scarletmail.rutgers.edu)
-
-Project Link: [https://github.com/yourusername/lecture-study-guide-generator](https://github.com/yourusername/lecture-study-guide-generator)
