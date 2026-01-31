@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lecture-study-guide"
+version = "1.0.0"
+description = "Generate comprehensive study guides from lecture materials using AI"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Education",
+    "Topic :: Text Processing",
+]
+dependencies = [
+    "python-pptx>=0.6.21",
+    "pdfplumber>=0.10.0",
+    "anthropic>=0.18.0",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=1.0.0"]
+anki = ["genanki>=0.13.0"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+all = [
+    "openai>=1.0.0",
+    "genanki>=0.13.0",
+]
+
+[project.scripts]
+lecture-study-guide = "lecture_study_guide.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/lecture-study-guide-generator"
+Documentation = "https://github.com/yourusername/lecture-study-guide-generator#readme"
+Repository = "https://github.com/yourusername/lecture-study-guide-generator"
+Issues = "https://github.com/yourusername/lecture-study-guide-generator/issues"
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=lecture_study_guide"

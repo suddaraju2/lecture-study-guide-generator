@@ -1,0 +1,16 @@
+# Core dependencies
+python-pptx>=0.6.21      # PowerPoint extraction
+pypdf>=3.0.0             # PDF extraction (primary)
+pdfplumber>=0.10.0       # PDF extraction with tables (optional)
+anthropic>=0.18.0        # Claude AI API
+openai>=1.0.0            # OpenAI API (optional)
+
+# Export dependencies
+genanki>=0.13.0          # Anki .apkg generation (optional)
+
+# Development dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=23.0.0
+ruff>=0.1.0
+mypy>=1.0.0
