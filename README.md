@@ -85,7 +85,7 @@ print(f"Questions: {len(study_guide.practice_questions)}")
 print(f"Flashcards: {len(study_guide.flashcards)}")
 ```
 
-## 📖 Output Examples
+## Output Examples
 
 ### Study Guide (Markdown)
 
