@@ -121,6 +121,38 @@ def _svg_concept():
     )
 
 
+_HTML_SCRIPT = """
+    <script>
+      const form = document.getElementById("upload-form");
+      const statusEl = document.getElementById("status");
+      const linksEl = document.getElementById("links");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        statusEl.textContent = "Generating... this may take a few minutes.";
+        linksEl.innerHTML = "";
+
+        const formData = new FormData(form);
+        const res = await fetch("/api/generate", { method: "POST", body: formData });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          statusEl.textContent = err.detail || "Generation failed.";
+          return;
+        }
+        const data = await res.json();
+        statusEl.textContent = `Done. Job ID: ${data.job_id}`;
+        data.outputs.forEach((item) => {
+          const a = document.createElement("a");
+          a.href = item.url;
+          a.textContent = `${item.format}: ${item.filename}`;
+          a.target = "_blank";
+          linksEl.appendChild(a);
+        });
+      });
+    </script>
+"""
+
+
 def _svg_hero():
     return (
         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='400' viewBox='0 0 640 400'%3E"
@@ -481,34 +513,7 @@ def index() -> str:
       </footer>
     </div>
 
-    <script>
-      const form = document.getElementById("upload-form");
-      const statusEl = document.getElementById("status");
-      const linksEl = document.getElementById("links");
-
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        statusEl.textContent = "Generating... this may take a few minutes.";
-        linksEl.innerHTML = "";
-
-        const formData = new FormData(form);
-        const res = await fetch("/api/generate", { method: "POST", body: formData });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          statusEl.textContent = err.detail || "Generation failed.";
-          return;
-        }
-        const data = await res.json();
-        statusEl.textContent = `Done. Job ID: ${data.job_id}`;
-        data.outputs.forEach((item) => {
-          const a = document.createElement("a");
-          a.href = item.url;
-          a.textContent = `${item.format}: ${item.filename}`;
-          a.target = "_blank";
-          linksEl.appendChild(a);
-        });
-      });
-    </script>
+{_HTML_SCRIPT}
   </body>
 </html>
 """
