@@ -142,6 +142,12 @@ _HTML_SCRIPT = """
           let msg = "Generation failed.";
           if (err.detail) {
             msg = Array.isArray(err.detail) ? err.detail.map(d => d.msg || d.message).join(" ") : err.detail;
+          } else if (res.status === 504 || res.status === 408) {
+            msg = "Request timed out. Generation takes 2-5 minutes—try again (the server may have been sleeping).";
+          } else if (res.status === 502 || res.status === 503) {
+            msg = "Server unavailable. Wait a minute for the server to wake up, then try again.";
+          } else if (res.status >= 500) {
+            msg = "Server error (" + res.status + "). Try again in a few minutes.";
           }
           statusEl.textContent = msg;
           statusEl.style.color = "#ef4444";
@@ -647,7 +653,7 @@ def index() -> str:
                 <option value="anthropic">anthropic</option>
                 <option value="openai">openai</option>
               </select>
-              <div class="hint">Uses your configured API key</div>
+              <div class="hint">On Render: add ANTHROPIC_API_KEY in Environment. Or paste key below.</div>
             </div>
             <div>
               <label>Model (optional)</label>
