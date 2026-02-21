@@ -12,6 +12,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from lecture_study_guide import StudyGuideGenerator
+from lecture_study_guide.exporters.json_exporter import JSONExporter
 
 
 app = FastAPI(title="Lecture Study Guide Generator")
@@ -126,6 +127,7 @@ _HTML_SCRIPT = """
       const form = document.getElementById("upload-form");
       const statusEl = document.getElementById("status");
       const linksEl = document.getElementById("links");
+      let currentJobId = null;
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -140,6 +142,7 @@ _HTML_SCRIPT = """
           return;
         }
         const data = await res.json();
+        currentJobId = data.job_id;
         statusEl.textContent = `Done. Job ID: ${data.job_id}`;
         data.outputs.forEach((item) => {
           const a = document.createElement("a");
@@ -148,7 +151,102 @@ _HTML_SCRIPT = """
           a.target = "_blank";
           linksEl.appendChild(a);
         });
+        const quizBtn = document.createElement("button");
+        quizBtn.className = "quiz-btn";
+        quizBtn.textContent = "Take Quiz";
+        quizBtn.onclick = () => openQuiz(currentJobId);
+        linksEl.appendChild(quizBtn);
       });
+
+      function openQuiz(jobId) {
+        document.getElementById("quiz-modal").classList.add("show");
+        document.getElementById("quiz-content").innerHTML = "<p style='color:var(--muted)'>Loading quiz...</p>";
+        fetch(`/api/quiz/${jobId}`)
+          .then(r => r.ok ? r.json() : Promise.reject(r))
+          .then(data => runQuiz(data))
+          .catch(() => {
+            document.getElementById("quiz-content").innerHTML = "<p>No quiz available. Generate a study guide first.</p>";
+          });
+      }
+
+      function runQuiz(data) {
+        const questions = data.questions || [];
+        if (questions.length === 0) {
+          document.getElementById("quiz-content").innerHTML = "<p>No multiple choice questions in this study guide.</p>";
+          return;
+        }
+        let qIndex = 0;
+        const answers = [];
+
+        function renderQuestion() {
+          const q = questions[qIndex];
+          const letters = ["A", "B", "C", "D"];
+          document.getElementById("quiz-content").innerHTML = `
+            <div class="quiz-title">${data.title || "Quiz"}</div>
+            <div class="quiz-progress">Question ${qIndex + 1} of ${questions.length}</div>
+            <div class="quiz-question">${q.question}</div>
+            <div id="quiz-options">${q.options.map((opt, i) =>
+              `<button class="quiz-option" data-idx="${i}">${letters[i]}. ${opt}</button>`
+            ).join("")}</div>
+            <div class="quiz-nav">
+              <button class="quiz-btn" id="quiz-prev" ${qIndex === 0 ? "disabled" : ""}>Previous</button>
+              <button class="quiz-btn" id="quiz-next">${qIndex === questions.length - 1 ? "Submit Quiz" : "Next"}</button>
+            </div>
+          `;
+          document.querySelectorAll("#quiz-options .quiz-option").forEach(btn => {
+            btn.onclick = () => {
+              document.querySelectorAll("#quiz-options .quiz-option").forEach(b => b.classList.remove("selected"));
+              btn.classList.add("selected");
+              answers[qIndex] = parseInt(btn.dataset.idx, 10);
+            };
+          });
+          if (answers[qIndex] !== undefined) {
+            document.querySelector(`#quiz-options .quiz-option[data-idx="${answers[qIndex]}"]`)?.classList.add("selected");
+          }
+          document.getElementById("quiz-prev").onclick = () => { qIndex--; renderQuestion(); };
+          document.getElementById("quiz-next").onclick = () => {
+            if (qIndex < questions.length - 1) { qIndex++; renderQuestion(); }
+            else showResults();
+          };
+        }
+
+        function showResults() {
+          let correct = 0;
+          questions.forEach((q, i) => { if (answers[i] === q.correct_index) correct++; });
+          const pct = Math.round((correct / questions.length) * 100);
+          let grade = "F";
+          if (pct >= 90) grade = "A";
+          else if (pct >= 80) grade = "B";
+          else if (pct >= 70) grade = "C";
+          else if (pct >= 60) grade = "D";
+          document.getElementById("quiz-content").innerHTML = `
+            <div class="quiz-title">Quiz Results</div>
+            <div class="quiz-grade">${grade} - ${pct}%</div>
+            <p style="text-align:center;color:var(--muted)">You got ${correct} out of ${questions.length} correct.</p>
+            <div style="margin-top:1.5rem">
+              ${questions.map((q, i) => {
+                const u = answers[i];
+                const c = q.correct_index;
+                const right = u === c;
+                return `<div style="margin-bottom:1rem">
+                  <div style="font-weight:600">${i + 1}. ${q.question}</div>
+                  <div class="quiz-explanation">
+                    Your answer: ${u !== undefined ? q.options[u] : "—"} ${right ? "✓" : "✗"}
+                    <br>Correct: ${q.options[c]}
+                    ${q.explanation ? `<br><br>${q.explanation}` : ""}
+                  </div>
+                </div>`;
+              }).join("")}
+            </div>
+            <button class="quiz-btn" style="width:100%;margin-top:1rem" onclick="document.getElementById('quiz-modal').classList.remove('show')">Close</button>
+          `;
+        }
+
+        renderQuestion();
+      }
+
+      document.getElementById("quiz-close").onclick = () => document.getElementById("quiz-modal").classList.remove("show");
+      document.getElementById("quiz-modal").onclick = (e) => { if (e.target.id === "quiz-modal") e.target.classList.remove("show"); };
     </script>
 """
 
@@ -379,6 +477,74 @@ def index() -> str:
         color: var(--primary-light);
       }}
       .links a:hover {{ text-decoration: underline; }}
+      .quiz-btn {{
+        display: inline-block;
+        margin: 0.5rem 1rem 0 0;
+        padding: 0.5rem 1rem;
+        background: var(--gradient);
+        color: white;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        font-size: 0.9rem;
+      }}
+      .quiz-btn:hover {{ opacity: 0.9; transform: translateY(-1px); }}
+      #quiz-modal {{
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+      }}
+      #quiz-modal.show {{ display: flex; }}
+      .quiz-box {{
+        background: var(--card);
+        border-radius: 24px;
+        max-width: 560px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        padding: 2rem;
+      }}
+      .quiz-title {{ font-size: 1.25rem; margin-bottom: 1.5rem; font-weight: 700; }}
+      .quiz-question {{ font-size: 1.1rem; margin-bottom: 1.25rem; line-height: 1.5; }}
+      .quiz-option {{
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 0.9rem 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+      }}
+      .quiz-option:hover {{ border-color: var(--primary); }}
+      .quiz-option.selected {{ border-color: var(--primary); background: rgba(99,102,241,0.15); }}
+      .quiz-option.correct {{ border-color: var(--success); background: rgba(16,185,129,0.15); }}
+      .quiz-option.wrong {{ border-color: #ef4444; background: rgba(239,68,68,0.15); }}
+      .quiz-progress {{ color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }}
+      .quiz-nav {{ display: flex; gap: 0.75rem; margin-top: 1.5rem; justify-content: space-between; }}
+      .quiz-grade {{
+        font-size: 2.5rem;
+        font-weight: 800;
+        text-align: center;
+        margin: 1.5rem 0;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }}
+      .quiz-explanation {{ margin-top: 1rem; padding: 1rem; background: var(--bg); border-radius: 12px; font-size: 0.9rem; color: var(--muted); }}
+      .quiz-close {{ position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.5rem; }}
       footer {{ margin-top: 3rem; color: var(--muted); text-align: center; font-size: 0.9rem; }}
     </style>
   </head>
@@ -508,6 +674,13 @@ def index() -> str:
         <div class="links" id="links"></div>
       </section>
 
+      <div id="quiz-modal">
+        <div class="quiz-box" style="position: relative;">
+          <button class="quiz-close" id="quiz-close" aria-label="Close">×</button>
+          <div id="quiz-content"></div>
+        </div>
+      </div>
+
       <footer>
         Tip: For faster results, upload slides with clear titles and minimal animations.
       </footer>
@@ -561,6 +734,8 @@ async def generate(
             num_flashcards=flashcards,
         )
         formats_list = formats.split() if formats else None
+        if formats_list and "json" not in formats_list:
+            formats_list = list(formats_list) + ["json"]
         outputs = generator.export_all(study_guide, job_dir, formats=formats_list)
         return outputs
 
@@ -581,6 +756,57 @@ async def generate(
             "outputs": response_outputs,
         }
     )
+
+
+@app.get("/api/quiz/{job_id}")
+def get_quiz(job_id: str) -> JSONResponse:
+    """Return multiple choice and true/false questions for the interactive quiz."""
+    job_dir = (BASE_OUTPUT_DIR / job_id).resolve()
+    if not job_dir.exists() or not job_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    json_files = list(job_dir.glob("*_study_guide.json"))
+    if not json_files:
+        raise HTTPException(status_code=404, detail="Study guide not found. Generate first.")
+
+    data = JSONExporter.load(json_files[0])
+    questions_raw = data.get("practice_questions", [])
+
+    quiz_questions = []
+    for q in questions_raw:
+        qtype = q.get("type", "")
+        if qtype not in ("multiple_choice", "true_false"):
+            continue
+
+        if qtype == "multiple_choice":
+            options = q.get("options", [])
+            answer = q.get("answer", "").strip().upper()
+            if len(options) < 2:
+                continue
+            correct_idx = 0
+            if len(answer) == 1 and ord("A") <= ord(answer) <= ord("Z"):
+                correct_idx = min(ord(answer) - ord("A"), len(options) - 1)
+            else:
+                for i, opt in enumerate(options):
+                    if str(opt).strip().lower() == str(answer).strip().lower():
+                        correct_idx = i
+                        break
+        else:
+            options = ["True", "False"]
+            ans = str(q.get("answer", "")).strip()
+            correct_idx = 0 if ans.lower() == "true" else 1
+
+        quiz_questions.append({
+            "question": q.get("question", ""),
+            "options": options,
+            "correct_index": correct_idx,
+            "explanation": q.get("explanation", ""),
+        })
+
+    return JSONResponse({
+        "title": data.get("title", "Quiz"),
+        "questions": quiz_questions,
+    })
 
 
 @app.get("/api/output/{job_id}/{filename}")
