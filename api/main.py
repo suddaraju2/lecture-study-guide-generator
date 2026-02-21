@@ -132,13 +132,19 @@ _HTML_SCRIPT = """
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         statusEl.textContent = "Generating... this may take a few minutes.";
+        statusEl.style.color = "";
         linksEl.innerHTML = "";
 
         const formData = new FormData(form);
         const res = await fetch("/api/generate", { method: "POST", body: formData });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          statusEl.textContent = err.detail || "Generation failed.";
+          let msg = "Generation failed.";
+          if (err.detail) {
+            msg = Array.isArray(err.detail) ? err.detail.map(d => d.msg || d.message).join(" ") : err.detail;
+          }
+          statusEl.textContent = msg;
+          statusEl.style.color = "#ef4444";
           return;
         }
         const data = await res.json();
@@ -739,7 +745,18 @@ async def generate(
         outputs = generator.export_all(study_guide, job_dir, formats=formats_list)
         return outputs
 
-    outputs = await asyncio.to_thread(run_generation)
+    try:
+        outputs = await asyncio.to_thread(run_generation)
+    except Exception as e:
+        err_msg = str(e)
+        if "api_key" in err_msg.lower() or "api key" in err_msg.lower() or "authentication" in err_msg.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="API key missing or invalid. Add ANTHROPIC_API_KEY or OPENAI_API_KEY in Render env vars, or paste your key in the form.",
+            )
+        if "rate" in err_msg.lower() or "limit" in err_msg.lower():
+            raise HTTPException(status_code=429, detail="API rate limit reached. Please try again later.")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {err_msg}")
 
     response_outputs = [
         {
